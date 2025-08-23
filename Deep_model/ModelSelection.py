@@ -30,7 +30,7 @@ def model_selection(n, r, c, case):
     n_epochs_set = [100, 200, 500]
     learning_rate_set = [1e-3, 2e-3, 5e-3, 1e-2]
     p_dropout_set = [0, 0.1, 0.2, 0.3]
-    n_splines_H_set = [i for i in range(math.floor(math.pow(n, 1/3 + 1e-7)), 2 * math.floor(math.pow(n, 1/3 + 1e-7)) + 1)]
+    n_splines_H_set = [i for i in range(math.floor(math.pow(n, 1/3 + 1e-7)) + 4, 2 * math.floor(math.pow(n, 1/3 + 1e-7)) + 5)]
     iter = product(n_hidden_set, n_neurons_set, n_epochs_set, learning_rate_set, p_dropout_set, n_splines_H_set)
    
     n_sim = 10
