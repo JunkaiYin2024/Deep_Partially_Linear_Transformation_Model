@@ -180,17 +180,17 @@ class SE_loss(nn.Module):
     def forward(self, z, delta, Phi, H_t_derivatives, t_splines, t_spline_derivatives, b, theta):
         a = torch.matmul(t_splines, theta)
         a_derivatives = torch.matmul(t_spline_derivatives, theta)
-        information = (z - a - b) * Phi - delta * a_derivatives / H_t_derivatives
-        SE_loss = information ** 2      
-        return SE_loss.sum() / z.shape[0]
+        efficient_score = (z - a - b) * Phi - delta * a_derivatives / H_t_derivatives
+        SE_loss = efficient_score ** 2      
+        return efficient_score, SE_loss.sum() / z.shape[0]
     
 def Est_SE(r, z, x, t_splines, t_spline_derivatives, delta, beta, gamma, gx):
     z_dim = z.shape[1]
     x_dim = x.shape[1]
-    se = np.zeros(z_dim)
+    efficient_scores = np.zeros((z_dim, z.shape[0]))
     learning_rate = 2e-3
     weight_decay = 1e-3
-    batch_size = 128
+    batch_size = 100
     n_epochs = 100
     device = z.device
 
@@ -226,13 +226,17 @@ def Est_SE(r, z, x, t_splines, t_spline_derivatives, delta, beta, gamma, gx):
             model.train()
             for z_temp, x_temp, delta_temp, Phi_temp, H_t_derivatives_temp, t_splines_temp, t_spline_derivatives_temp in loader:
                 b, theta = model(x_temp)
-                loss = loss_fn(z_temp, delta_temp, Phi_temp, H_t_derivatives_temp, t_splines_temp, t_spline_derivatives_temp, b, theta)                            
+                efficient_score, loss = loss_fn(z_temp, delta_temp, Phi_temp, H_t_derivatives_temp, t_splines_temp, t_spline_derivatives_temp, b, theta)                            
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
 
         b, theta = model(x)
-        loss = loss_fn(z0, delta, Phi, H_t_derivatives, t_splines, t_spline_derivatives, b, theta)
-        loss = loss.cpu().detach().numpy()
-        se[i] = 1 / np.sqrt(loss * z.shape[0])
+        efficient_score, loss = loss_fn(z0, delta, Phi, H_t_derivatives, t_splines, t_spline_derivatives, b, theta)
+        efficient_score = efficient_score.cpu().detach().numpy()
+        efficient_scores[i] = efficient_score
+    
+    information_matrix = np.dot(efficient_scores, efficient_scores.T) / z.shape[0]
+    covariance_matrix = np.linalg.inv(information_matrix) / z.shape[0]
+    se = np.sqrt(np.diag(covariance_matrix))
     return se
