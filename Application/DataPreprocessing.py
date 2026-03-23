@@ -28,9 +28,9 @@ def Dataset(split_ratio, random_seed):
     z_train = data[: split_index, 2: 7]
     z_test = data[split_index: , 2: 7]
 
-    x_train = data[: split_index, 7: ]
-    x_test = data[split_index: , 7: ]
-    x_train = (x_train - x_train.min(0)) / (x_train.max(0) - x_train.min(0))
-    x_test = (x_test - x_test.min(0)) / (x_test.max(0) - x_test.min(0))
+    x = data[: , 7: ]
+    x = (x - x.min(0)) / (x.max(0) - x.min(0))
+    x_train = x[: split_index]
+    x_test = x[split_index: ]
 
     return z_train, z_test, x_train, x_test, time_train, time_test, delta_train, delta_test
